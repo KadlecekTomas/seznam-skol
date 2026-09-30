@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SchoolType {
+  PRIMARY
+  SECONDARY
+  OTHER
+}
+
+enum WebsiteStatus {
+  UNKNOWN
+  VERIFIED
+  INVALID
+}
+
+enum QualityStatus {
+  VERIFIED
+  INCOMPLETE
+  STALE
+  REJECTED
+}
+
+enum SourceType {
+  SCHOOL_WEBSITE
+  OPEN_DATA
+  REGISTRY
+}
+
+enum AssociationMethod {
+  DOM
+  STRUCTURED_DATA
+  AI
+}
+
+enum CrawlRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  PARTIAL
+}
+
+enum FetchMode {
+  STATIC
+  BROWSER
+}
+
+model School {
+  id                    String        @id @default(uuid())
+  externalRegistryId    String?       @unique
+  name                  String
+  schoolType            SchoolType
+  region                String
+  addressStreet         String?
+  addressCity           String
+  addressPostalCode     String?
+  addressFull           String
+  ico                   String?
+  redIzo                String?
+  website               String?
+  websiteStatus         WebsiteStatus @default(UNKNOWN)
+  websiteSource         String?
+  websiteVerifiedAt     DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  contacts              Contact[]
+  crawlPages            CrawlPage[]
+
+  @@index([region, schoolType])
+  @@index([ico])
+  @@index([redIzo])
+}
+
+model Contact {
+  id                    String        @id @default(uuid())
+  schoolId              String
+  firstName             String
+  lastName              String
+  email                 String
+  normalizedEmail       String
+  role                  String?
+  qualityStatus         QualityStatus @default(INCOMPLETE)
+  collectedAt           DateTime      @default(now())
+  lastVerifiedAt        DateTime?
+  staleAt               DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  school                School        @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sources               ContactSource[]
+
+  @@unique([schoolId, normalizedEmail])
+  @@index([qualityStatus])
+  @@index([lastName, firstName])
+}
+
+model ContactSource {
+  id                    String            @id @default(uuid())
+  contactId             String
+  crawlRunId            String?
+  sourceUrl             String
+  sourceType            SourceType
+  evidenceTextHash      String?
+  observedAt            DateTime          @default(now())
+  associationMethod     AssociationMethod
+  confidence            Float?
+
+  contact               Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  crawlRun              CrawlRun?         @relation(fields: [crawlRunId], references: [id], onDelete: SetNull)
+
+  @@index([contactId, observedAt])
+  @@index([sourceUrl])
+}
+
+model CrawlRun {
+  id                    String         @id @default(uuid())
+  scope                 Json
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  status                CrawlRunStatus @default(PENDING)
+  schoolsQueued         Int            @default(0)
+  schoolsCompleted      Int            @default(0)
+  pagesFetched          Int            @default(0)
+  contactsFound         Int            @default(0)
+  contactsVerified      Int            @default(0)
+  errorCount            Int            @default(0)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  pages                 CrawlPage[]
+  contactSources        ContactSource[]
+}
+
+model CrawlPage {
+  id                    String      @id @default(uuid())
+  crawlRunId            String
+  schoolId              String
+  url                   String
+  canonicalUrl          String?
+  httpStatus            Int?
+  fetchMode             FetchMode
+  fetchedAt             DateTime    @default(now())
+  contentHash           String?
+  relevanceScore        Float?
+  errorCode             String?
+
+  crawlRun              CrawlRun    @relation(fields: [crawlRunId], references: [id], onDelete: Cascade)
+  school                School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([crawlRunId, schoolId])
+  @@index([schoolId, url])
+}
