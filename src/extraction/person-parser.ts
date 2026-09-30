@@ -35,19 +35,19 @@ const NAME_REGEX = new RegExp(
 );
 
 const ROLE_PATTERNS: Array<[RegExp, string]> = [
-  [/\bředitelka?\b/iu, "ředitel/ředitelka"],
-  [/\bzástup(?:ce|kyně)(?:\s+ředitele|\s+ředitelky)?\b/iu, "zástupce/zástupkyně"],
-  [/\bICT\s+koordinátor(?:ka)?\b/iu, "ICT koordinátor/koordinátorka"],
-  [/\bkoordinátor(?:ka)?\s+ICT\b/iu, "ICT koordinátor/koordinátorka"],
-  [/\bučitelka?\b/iu, "učitel/učitelka"],
-  [/\bpedagog(?:ický|ická)?\b/iu, "pedagog"],
-  [/\bsekretářka?\b/iu, "sekretář/sekretářka"],
-  [/\bekonomka?\b/iu, "ekonom/ekonomka"],
-  [/\bhospodářka?\b/iu, "hospodář/hospodářka"],
-  [/\bvýchovn(?:ý|á)\s+porad(?:ce|kyně)\b/iu, "výchovný poradce/poradkyně"],
-  [/\bmetodik(?:čka)?\s+prevence\b/iu, "metodik/metodička prevence"],
-  [/\bškolní\s+psycholog(?:žka)?\b/iu, "školní psycholog/psycholožka"],
-  [/\basistent(?:ka)?\b/iu, "asistent/asistentka"],
+  [/ředitelka?/iu, "ředitel/ředitelka"],
+  [/zástup(?:ce|kyně)(?:\s+ředitele|\s+ředitelky)?/iu, "zástupce/zástupkyně"],
+  [/ICT\s+koordinátor(?:ka)?/iu, "ICT koordinátor/koordinátorka"],
+  [/koordinátor(?:ka)?\s+ICT/iu, "ICT koordinátor/koordinátorka"],
+  [/učitelka?/iu, "učitel/učitelka"],
+  [/pedagog(?:ický|ická)?/iu, "pedagog"],
+  [/sekretářka?/iu, "sekretář/sekretářka"],
+  [/ekonomka?/iu, "ekonom/ekonomka"],
+  [/hospodářka?/iu, "hospodář/hospodářka"],
+  [/výchovn(?:ý|á)\s+porad(?:ce|kyně)/iu, "výchovný poradce/poradkyně"],
+  [/metodik(?:čka)?\s+prevence/iu, "metodik/metodička prevence"],
+  [/školní\s+psycholog(?:žka)?/iu, "školní psycholog/psycholožka"],
+  [/asistent(?:ka)?/iu, "asistent/asistentka"],
 ];
 
 const NON_PERSON_WORDS = new Set([
@@ -104,15 +104,18 @@ const findRole = (context: string): string | null => {
   return null;
 };
 
+interface ParsedName {
+  firstName: string;
+  lastName: string;
+  raw: string;
+  index: number;
+}
+
 const extractNames = (
   context: string,
   schoolName?: string,
-): Array<{ firstName: string; lastName: string; raw: string }> => {
-  const results = new Map<string, {
-    firstName: string;
-    lastName: string;
-    raw: string;
-  }>();
+): ParsedName[] => {
+  const results = new Map<string, ParsedName>();
   const normalizedSchool = schoolName
     ? normalizeForComparison(schoolName)
     : null;
@@ -146,10 +149,62 @@ const extractNames = (
     }
 
     const key = normalizeForComparison(firstName + " " + lastName);
+    results.set(key, {
+      firstName,
+      lastName,
+      raw,
+      index: match.index ?? 0,
+    });
+  }
+
+  return [...results.values()].sort(
+    (left, right) => left.index - right.index,
+  );
+};
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^$()|[\]\\{}]/gu, "\\    const key = normalizeForComparison(firstName + " " + lastName);
     results.set(key, { firstName, lastName, raw });
   }
 
   return [...results.values()];
+};");
+
+const addEmailBoundaries = (
+  context: string,
+  email: string,
+): string =>
+  context.replace(
+    new RegExp(escapeRegExp(email), "iu"),
+    " " + email + " ",
+  );
+
+const choosePersonNearestBeforeEmail = (
+  context: string,
+  email: string,
+  schoolName?: string,
+): ParsedName | null => {
+  const bounded = addEmailBoundaries(context, email);
+  const emailIndex = bounded
+    .toLocaleLowerCase("cs-CZ")
+    .indexOf(email.toLocaleLowerCase("cs-CZ"));
+
+  if (emailIndex < 0) {
+    return null;
+  }
+
+  const prefix = bounded.slice(0, emailIndex);
+  const candidates = extractNames(prefix, schoolName);
+  const person = candidates.at(-1);
+
+  if (!person) {
+    return null;
+  }
+
+  const distance =
+    prefix.length - (person.index + person.raw.length);
+
+  return distance <= 160 ? person : null;
 };
 
 const countDistinctEmails = (context: string): number => {
@@ -174,27 +229,19 @@ export const pairPeopleWithEmails = (
   const ambiguous: EmailOccurrence[] = [];
 
   for (const occurrence of occurrences) {
-    const names = extractNames(
+    if (countDistinctEmails(occurrence.contextText) > 1) {
+      ambiguous.push(occurrence);
+      continue;
+    }
+
+    const person = choosePersonNearestBeforeEmail(
       occurrence.contextText,
+      occurrence.email,
       options.schoolName,
     );
 
-    if (names.length === 0) {
-      unpaired.push(occurrence);
-      continue;
-    }
-
-    if (
-      names.length !== 1 ||
-      countDistinctEmails(occurrence.contextText) > 1
-    ) {
-      ambiguous.push(occurrence);
-      continue;
-    }
-
-    const person = names[0];
     if (!person) {
-      ambiguous.push(occurrence);
+      unpaired.push(occurrence);
       continue;
     }
 
