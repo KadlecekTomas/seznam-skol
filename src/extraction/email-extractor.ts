@@ -31,15 +31,20 @@ const findContextText = (
   $: cheerio.CheerioAPI,
   element: unknown,
 ): string => {
-  let current = $(element as never);
+  const start = $(element as never);
+  const candidates = [
+    start,
+    ...start
+      .parents()
+      .toArray()
+      .slice(0, MAX_ANCESTOR_DEPTH)
+      .map((node) => $(node)),
+  ];
+
   let fallback = "";
 
-  for (let depth = 0; depth < MAX_ANCESTOR_DEPTH; depth += 1) {
-    if (current.length === 0) {
-      break;
-    }
-
-    const text = normalizeWhitespace(current.first().text());
+  for (const candidate of candidates) {
+    const text = normalizeWhitespace(candidate.first().text());
 
     if (
       text.length > 0 &&
@@ -51,8 +56,6 @@ const findContextText = (
         return text;
       }
     }
-
-    current = current.parent();
   }
 
   return fallback.slice(0, MAX_CONTEXT_LENGTH);
