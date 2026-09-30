@@ -52,6 +52,21 @@ describe("person parser", () => {
     expect(result.ambiguous).toHaveLength(1);
   });
 
+  it("chooses the person nearest before the email, not later product names", () => {
+    const result = pairPeopleWithEmails([
+      occurrence(
+        "Technická podpora pro rodiče a žákyTomáš Kadlečekkadlecek@fzschodovicka.czPomoc s Google Classroom a Škola OnLine.",
+        "kadlecek@fzschodovicka.cz",
+      ),
+    ]);
+
+    expect(result.verified).toHaveLength(1);
+    expect(result.verified[0]).toMatchObject({
+      firstName: "Tomáš",
+      lastName: "Kadleček",
+    });
+  });
+
   it("does not parse the school name as a person", () => {
     const result = pairPeopleWithEmails(
       [
