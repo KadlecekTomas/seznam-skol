@@ -163,12 +163,7 @@ const extractNames = (
 };
 
 const escapeRegExp = (value: string): string =>
-  value.replace(/[.*+?^$()|[\]\\{}]/gu, "\\    const key = normalizeForComparison(firstName + " " + lastName);
-    results.set(key, { firstName, lastName, raw });
-  }
-
-  return [...results.values()];
-};");
+  value.replace(/[.*+?^$()|[\]\\{}]/gu, "\\$&");
 
 const addEmailBoundaries = (
   context: string,
