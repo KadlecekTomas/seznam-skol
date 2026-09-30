@@ -80,14 +80,14 @@ Cíl: efektivně najít relevantní stránky.
 
 - [ ] robots parser
 - [ ] sitemap parser
-- [ ] homepage link discovery
-- [ ] URL relevance scoring
-- [ ] domain rate limit
+- [x] homepage link discovery
+- [x] URL relevance scoring
+- [x] basic per-school delay / bounded crawl
 - [ ] retry/backoff
-- [ ] crawl budget
-- [ ] statický fetch
+- [x] crawl budget
+- [x] statický fetch
 - [ ] Playwright fallback
-- [ ] CrawlRun + CrawlPage evidence
+- [x] CrawlRun + CrawlPage evidence
 
 Acceptance:
 
@@ -101,14 +101,14 @@ Acceptance:
 
 Cíl: získat kandidáty osoba + e-mail.
 
-- [ ] mailto parser
-- [ ] textový email parser
-- [ ] základní obfuscation decoder
-- [ ] lokální DOM context
-- [ ] person name parser
-- [ ] role parser
+- [x] mailto parser
+- [x] textový email parser
+- [x] základní obfuscation decoder
+- [x] lokální DOM context
+- [x] person name parser
+- [x] role parser
 - [ ] AI fallback se strict JSON schema
-- [ ] evidence metadata
+- [x] evidence metadata
 
 Acceptance:
 
@@ -120,13 +120,13 @@ Acceptance:
 
 ## Fáze 6 — validace a deduplikace
 
-- [ ] normalizedEmail
-- [ ] syntax validation
-- [ ] person/email association rules
-- [ ] general mailbox detection
+- [x] normalizedEmail
+- [x] syntax validation
+- [x] person/email association rules
+- [x] general mailbox detection
 - [ ] quality classifier
-- [ ] dedupe per school
-- [ ] VERIFIED / INCOMPLETE / STALE / REJECTED
+- [x] dedupe per school
+- [x] VERIFIED / INCOMPLETE / STALE / REJECTED model
 - [ ] ruční QA helper pro pilot
 
 Acceptance:
@@ -179,7 +179,7 @@ Pokud je precision vysoká, ale recall nízký, zlepšit discovery stránek.
 - [ ] full run
 - [ ] retry failed schools
 - [ ] ruční QA vzorku
-- [ ] CSV export
+- [x] CSV export
 - [ ] XLSX export
 - [ ] souhrn metrik
 
