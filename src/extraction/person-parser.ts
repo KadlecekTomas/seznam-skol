@@ -165,41 +165,36 @@ const extractNames = (
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^$()|[\]\\{}]/gu, "\\$&");
 
-const addEmailBoundaries = (
-  context: string,
-  email: string,
-): string =>
+const addStructuralBoundaries = (context: string): string =>
   context.replace(
-    new RegExp(escapeRegExp(email), "iu"),
-    " " + email + " ",
+    /([a-záčďéěíňóřšťúůýž])([A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ])/gu,
+    "$1 $2",
   );
 
-const choosePersonNearestBeforeEmail = (
+const getPersonCandidatesBeforeEmail = (
   context: string,
   email: string,
   schoolName?: string,
-): ParsedName | null => {
-  const bounded = addEmailBoundaries(context, email);
+): ParsedName[] => {
+  const bounded = addStructuralBoundaries(context).replace(
+    new RegExp(escapeRegExp(email), "iu"),
+    " " + email + " ",
+  );
   const emailIndex = bounded
     .toLocaleLowerCase("cs-CZ")
     .indexOf(email.toLocaleLowerCase("cs-CZ"));
 
   if (emailIndex < 0) {
-    return null;
+    return [];
   }
 
   const prefix = bounded.slice(0, emailIndex);
-  const candidates = extractNames(prefix, schoolName);
-  const person = candidates.at(-1);
+  return extractNames(prefix, schoolName).filter((person) => {
+    const distance =
+      prefix.length - (person.index + person.raw.length);
 
-  if (!person) {
-    return null;
-  }
-
-  const distance =
-    prefix.length - (person.index + person.raw.length);
-
-  return distance <= 160 ? person : null;
+    return distance <= 160;
+  });
 };
 
 const countDistinctEmails = (context: string): number => {
@@ -229,14 +224,26 @@ export const pairPeopleWithEmails = (
       continue;
     }
 
-    const person = choosePersonNearestBeforeEmail(
+    const people = getPersonCandidatesBeforeEmail(
       occurrence.contextText,
       occurrence.email,
       options.schoolName,
     );
 
-    if (!person) {
+    if (people.length === 0) {
       unpaired.push(occurrence);
+      continue;
+    }
+
+    if (people.length !== 1) {
+      ambiguous.push(occurrence);
+      continue;
+    }
+
+    const person = people[0];
+
+    if (!person) {
+      ambiguous.push(occurrence);
       continue;
     }
 
