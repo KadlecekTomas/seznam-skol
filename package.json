@@ -16,7 +16,8 @@
     "db:validate": "prisma validate --config prisma7.config.ts",
     "db:migrate": "prisma migrate dev --config prisma7.config.ts",
     "test:pilot": "node --test src/pilot/*.node-tests.mjs",
-    "pilot:export": "node src/pilot/cli.mjs"
+    "pilot:export": "node src/pilot/cli.mjs",
+    "profiles:script": "node src/pilot/browser-profiles.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

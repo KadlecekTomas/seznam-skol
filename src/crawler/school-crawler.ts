@@ -1,3 +1,4 @@
+import { discoverProfileInventory } from "./profile-inventory.js";
 import { createHash } from "node:crypto";
 
 import {
@@ -46,6 +47,8 @@ export interface SchoolCrawlerResult {
   ambiguousCount: number;
   conflictingEmails: string[];
   robotsFound: boolean;
+  coverageWarnings: string[];
+  profileInventory: Array<{ sourceUrl: string; names: string[] }>;
 }
 
 export interface SchoolCrawlerOptions {
@@ -290,6 +293,8 @@ export const crawlSchoolWebsite = async (
   const seen = new Set<string>();
   const pages: CrawledPageResult[] = [];
   const contactCandidates: PersonContactCandidate[] = [];
+  const coverageWarnings: string[] = [];
+  const profileInventory: Array<{ sourceUrl: string; names: string[] }> = [];
   let unpairedCount = 0;
   let ambiguousCount = 0;
 
@@ -366,6 +371,12 @@ export const crawlSchoolWebsite = async (
         continue;
       }
 
+      const profileNames = discoverProfileInventory(response.text);
+      if (profileNames.length > 0) {
+        profileInventory.push({ sourceUrl: response.finalUrl, names: profileNames });
+        coverageWarnings.push("BROWSER_PROFILE_REVIEW_REQUIRED: " + response.finalUrl + " (" + profileNames.length + " people)");
+      }
+
       const occurrences =
         extractEmailOccurrences(
           response.text,
@@ -439,5 +450,7 @@ export const crawlSchoolWebsite = async (
     conflictingEmails:
       deduplicated.conflictingEmails,
     robotsFound: robotsText !== null,
+    coverageWarnings,
+    profileInventory,
   };
 };

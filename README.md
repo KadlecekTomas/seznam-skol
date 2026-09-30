@@ -75,3 +75,7 @@ Teprve po ověření kvality se spustí celá Praha.
 - Historie se nemaže jen proto, že kontakt z webu zmizel.
 - Hlavní export obsahuje pouze validní kontakty.
 - Public-only crawling: žádné přihlašování, obcházení ochran ani neveřejné zdroje.
+
+## Oprava pokrytí Chodovické
+
+Viz [zjištěná příčina, živé výsledky a omezení browser modulu](docs/CHODOVICKA_CORRECTION.md). Samotné nalezení kontaktů neznamená úplné pokrytí školy.

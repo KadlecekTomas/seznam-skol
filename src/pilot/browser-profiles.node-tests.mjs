@@ -1,0 +1,13 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {profileCoverage, collectPublicProfileCards} from './browser-profiles.mjs';
+const sample = () => ({expectedCards:2, discoveredNames:['Jana Testová','Jana Testová'], observations:[0,1].map(index=>({index,cardName:'Jana Testová',publishedName:'Jana Testová',status:'OPENED',publishedEmails:['jana@example.org']}))});
+test('duplicate role cards count once as a person',()=>{const c=profileCoverage(sample());assert.equal(c.expectedPeople,1);assert.equal(c.openedCards,2);assert.equal(c.status,'PROFILES_CHECKED');});
+test('missing opened card remains PARTIAL',()=>{const c=sample();c.observations.pop();assert.equal(profileCoverage(c).status,'PARTIAL');});
+test('duplicate observations do not satisfy coverage',()=>{const c=sample();c.observations=[c.observations[0],c.observations[0]];assert.equal(profileCoverage(c).status,'PARTIAL');});
+test('wrong modal name is not accepted',()=>{const c=sample();c.observations[1].publishedName='Petr Jiný';assert.equal(profileCoverage(c).status,'PARTIAL');});
+test('budget exhaustion is explicit',()=>{const c=sample();c.budgetExhausted=true;assert.equal(profileCoverage(c).status,'PARTIAL');});
+test('no profiles is not a complete employee census',()=>{assert.equal(profileCoverage({expectedCards:0,discoveredNames:[],observations:[]}).status,'NO_PROFILE_CONTROLS');});
+test('missing email is an explicit reviewed exception',()=>{const c=sample();c.observations.forEach(o=>o.publishedEmails=[]);const r=profileCoverage(c);assert.equal(r.status,'PROFILES_CHECKED');assert.deepEqual(r.peopleWithoutPublishedEmail,['Jana Testová']);assert.equal(r.allEmployeesKnown,false);});
+test('invalid inventory is rejected',()=>assert.throws(()=>profileCoverage({expectedCards:2,discoveredNames:[],observations:[]})));
+test('invalid budget rejected before browser access',async()=>assert.rejects(()=>collectPublicProfileCards({maxCards:-1})));

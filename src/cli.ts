@@ -296,6 +296,7 @@ const runCrawl = async (): Promise<void> => {
           result,
         });
 
+        errorCount += result.coverageWarnings.length;
         schoolsCompleted += 1;
         pagesFetched += result.pages.length;
         contactsFound +=
@@ -315,6 +316,7 @@ const runCrawl = async (): Promise<void> => {
           unpaired: result.unpairedCount,
           ambiguous: result.ambiguousCount,
           conflicts: result.conflictingEmails.length,
+          coverageWarnings: result.coverageWarnings,
         });
       } catch (error) {
         errorCount += 1;
