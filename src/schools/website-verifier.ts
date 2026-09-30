@@ -63,6 +63,10 @@ export const verifySchoolWebsiteHtml = (
   school: ParsedRegistrySchool,
 ): WebsiteVerificationResult => {
   const normalized = normalizeText(html);
+  const rawNormalized = html
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLocaleLowerCase("cs-CZ");
   const signals: string[] = [];
   let score = 0;
 
@@ -76,9 +80,17 @@ export const verifySchoolWebsiteHtml = (
     signals.push("redIzo");
   }
 
-  const matchingEmail = school.registryEmails.find((email) =>
-    normalized.includes(email.toLocaleLowerCase("cs-CZ")),
-  );
+  const matchingEmail = school.registryEmails.find((email) => {
+    const normalizedEmail = email
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLocaleLowerCase("cs-CZ");
+
+    return (
+      normalized.includes(normalizedEmail) ||
+      rawNormalized.includes(normalizedEmail)
+    );
+  });
 
   if (matchingEmail) {
     score += 4;
