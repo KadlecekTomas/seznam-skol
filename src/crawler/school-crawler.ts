@@ -270,7 +270,7 @@ export const crawlSchoolWebsite = async (
       robotsText,
     );
 
-  const homepageUrl = website.replace(/\\/$/u, "");
+  const homepageUrl = website.replace(/\/$/u, "");
 
   const queue: DiscoveredLink[] = [
     {
