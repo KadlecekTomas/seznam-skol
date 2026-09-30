@@ -7,3 +7,10 @@ src/generated/
 playwright-report/
 test-results/
 .DS_Store
+
+# Collected contact data, source captures and private delivery artifacts.
+# Keep real contacts out of the public repository.
+data/
+exports/
+artifacts/
+.cache/
