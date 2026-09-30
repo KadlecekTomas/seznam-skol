@@ -1,4 +1,9 @@
 import type { ParsedRegistrySchool } from "../registry/types.js";
+import { discoverInternalLinks } from "../crawler/discovery.js";
+import {
+  fetchRobotsTxt,
+  isAllowedByRobots,
+} from "../crawler/robots.js";
 
 export type WebsiteVerificationStatus = "VERIFIED" | "UNKNOWN" | "INVALID";
 
@@ -178,11 +183,96 @@ export const verifyWebsiteCandidate = async (
       };
     }
 
-    const html = await response.text();
-    const result = verifySchoolWebsiteHtml(html, school);
+    const homepageHtml = await response.text();
+    const homepageResult =
+      verifySchoolWebsiteHtml(homepageHtml, school);
+
+    if (homepageResult.status === "VERIFIED") {
+      return {
+        ...homepageResult,
+        finalUrl: response.url,
+        httpStatus: response.status,
+      };
+    }
+
+    const robotsText = await fetchRobotsTxt(response.url);
+    const candidates = discoverInternalLinks(
+      homepageHtml,
+      response.url,
+    )
+      .filter((candidate) => candidate.score >= 4)
+      .slice(0, 4);
+
+    const htmlFragments = [homepageHtml];
+    let bestResult = homepageResult;
+
+    for (const candidate of candidates) {
+      if (
+        robotsText &&
+        !isAllowedByRobots(robotsText, candidate.url)
+      ) {
+        continue;
+      }
+
+      try {
+        const pageResponse = await fetch(candidate.url, {
+          redirect: "follow",
+          headers: {
+            accept: "text/html,application/xhtml+xml",
+            "user-agent":
+              "seznam-skol/0.1 (+https://github.com/KadlecekTomas/seznam-skol)",
+          },
+          signal: AbortSignal.timeout(12_000),
+        });
+
+        if (!pageResponse.ok) {
+          continue;
+        }
+
+        const pageType =
+          pageResponse.headers.get("content-type") ?? "";
+
+        if (
+          !pageType
+            .toLocaleLowerCase("en-US")
+            .includes("text/html")
+        ) {
+          continue;
+        }
+
+        const pageHtml = await pageResponse.text();
+        htmlFragments.push(pageHtml);
+
+        const pageResult =
+          verifySchoolWebsiteHtml(pageHtml, school);
+
+        if (pageResult.score > bestResult.score) {
+          bestResult = pageResult;
+        }
+
+        if (pageResult.status === "VERIFIED") {
+          return {
+            ...pageResult,
+            finalUrl: response.url,
+            httpStatus: response.status,
+          };
+        }
+      } catch {
+        // One broken internal page must not invalidate the domain.
+      }
+    }
+
+    const combinedResult = verifySchoolWebsiteHtml(
+      htmlFragments.join("\n"),
+      school,
+    );
+
+    if (combinedResult.score > bestResult.score) {
+      bestResult = combinedResult;
+    }
 
     return {
-      ...result,
+      ...bestResult,
       finalUrl: response.url,
       httpStatus: response.status,
     };
