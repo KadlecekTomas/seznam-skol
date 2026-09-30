@@ -17,14 +17,14 @@ Roadmapa je záměrně orientovaná na co nejrychlejší ověření business hod
 
 Cíl: spustitelný TypeScript projekt bez crawler logiky.
 
-- [ ] Node.js + TypeScript
+- [x] Node.js + TypeScript
 - [ ] lint / format
 - [ ] env validace
-- [ ] PostgreSQL + Prisma
-- [ ] základní CLI
-- [ ] test runner
-- [ ] Docker Compose pro lokální DB
-- [ ] základní CI
+- [x] PostgreSQL + Prisma
+- [x] základní CLI
+- [x] test runner
+- [x] Docker Compose pro lokální DB
+- [x] základní CI workflow (GitHub runner aktuálně končí ještě před spuštěním kroků)
 
 Výstup:
 
@@ -40,13 +40,13 @@ npm run cli -- --help
 
 Cíl: získat master seznam pražských ZŠ/SŠ s adresami.
 
-- [ ] adapter pro autoritativní registry zdroj
-- [ ] download/import
-- [ ] normalizace adres
-- [ ] identifikace ZŠ/SŠ
-- [ ] region filter = Praha
-- [ ] idempotentní upsert
-- [ ] unit testy parseru
+- [x] adapter pro MŠMT registry JSON-LD
+- [x] download/import
+- [x] normalizace adres
+- [x] identifikace ZŠ/SŠ včetně kombinovaného subjektu
+- [x] pražský MŠMT dataset jako první scope
+- [x] idempotentní upsert podle RED IZO / fallback IČO
+- [x] unit testy parseru
 
 Acceptance:
 
