@@ -11,7 +11,7 @@ Reprezentuje jednu školu jako organizaci.
 | id | UUID | interní ID |
 | externalRegistryId | string? | stabilní ID z registru |
 | name | string | oficiální název |
-| schoolType | enum/string | ZŠ, SŠ, případně další |
+| schoolType | enum | PRIMARY / SECONDARY / PRIMARY_AND_SECONDARY / OTHER |
 | region | string | pro MVP Praha |
 | addressStreet | string? | |
 | addressCity | string | |
@@ -19,6 +19,10 @@ Reprezentuje jednu školu jako organizaci.
 | addressFull | string | exportní podoba |
 | ico | string? | pokud je dostupné |
 | redIzo | string? | pokud je dostupné |
+| registryEmails | string[] | e-maily zveřejněné v registru; nejsou automaticky osobními kontakty |
+| registryDirectorName | string? | jméno ředitele z registru; nespojuje se automaticky s registryEmails |
+| registrySnapshotDate | datetime? | datum výstupu registru |
+| registrySourceUrl | string? | přesný zdroj importu |
 | website | string? | canonical URL |
 | websiteStatus | enum | UNKNOWN / VERIFIED / INVALID |
 | websiteVerifiedAt | datetime? | |
