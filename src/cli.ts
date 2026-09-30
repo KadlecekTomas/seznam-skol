@@ -1,4 +1,5 @@
 import { createPrismaClient } from "./db.js";
+import { exportVerifiedContactsCsv } from "./export/csv.js";
 import { crawlSchoolWebsite } from "./crawler/school-crawler.js";
 import { persistSchoolCrawl } from "./crawler/persistence.js";
 import { importRegistrySchools } from "./registry/import.js";
@@ -85,6 +86,7 @@ const printHelp = (): void => {
       "  resolve-websites      Verify website candidates for schools",
       "  crawl-url             Crawl one website without PostgreSQL",
       "  crawl                 Crawl verified school websites and persist contacts",
+      "  export-csv            Export VERIFIED contacts for Excel/Sheets",
       "",
       "import-schools options:",
       "  --dry-run",
@@ -102,6 +104,9 @@ const printHelp = (): void => {
       "crawl options:",
       "  --limit=<n>           Default 10 schools",
       "  --page-budget=<n>     Default 12 pages per school",
+      "",
+      "export-csv options:",
+      "  --output=<path>       Default exports/contacts-YYYY-MM-DD.csv",
       "",
       "Default registry:",
       "  " + MSMT_PRAGUE_REGISTRY_URL,
@@ -386,6 +391,25 @@ const runCrawl = async (): Promise<void> => {
   }
 };
 
+const runExportCsv = async (): Promise<void> => {
+  const prisma = createPrismaClient();
+  const date = new Date().toISOString().slice(0, 10);
+  const outputPath =
+    getOption("output") ??
+    "exports/contacts-" + date + ".csv";
+
+  try {
+    const result = await exportVerifiedContactsCsv(
+      prisma,
+      outputPath,
+    );
+
+    console.log(JSON.stringify(result, null, 2));
+  } finally {
+    await prisma.$disconnect();
+  }
+};
+
 const main = async (): Promise<void> => {
   switch (command) {
     case "help":
@@ -422,6 +446,10 @@ const main = async (): Promise<void> => {
 
     case "crawl":
       await runCrawl();
+      return;
+
+    case "export-csv":
+      await runExportCsv();
       return;
 
     default:
