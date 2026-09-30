@@ -18,44 +18,44 @@ const EMAIL_REGEX =
 const OBFUSCATED_EMAIL_REGEX =
   /([A-Z0-9._%+-]+)\s*(?:\[at\]|\(at\)|\[zavinac\]|\(zavinac\)|zavinac)\s*([A-Z0-9.-]+)\s*(?:\[dot\]|\(dot\)|\[tecka\]|\(tecka\)|tecka)\s*([A-Z]{2,})/giu;
 
+const PERSON_HINT_REGEX =
+  /\b[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][A-Za-zÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž-]{1,}\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ][A-Za-zÁČĎÉĚÍŇÓŘŠŤÚŮÝŽáčďéěíňóřšťúůýž-]{1,}\b/u;
+
 const normalizeWhitespace = (value: string): string =>
   value.replace(/\s+/gu, " ").trim();
 
 const MAX_CONTEXT_LENGTH = 1_200;
+const MAX_ANCESTOR_DEPTH = 8;
 
 const findContextText = (
   $: cheerio.CheerioAPI,
   element: unknown,
 ): string => {
-  const current = $(element as never);
-  const candidates = [
-    current.closest("tr"),
-    current.closest("li"),
-    current.closest("article"),
-    current.closest("section"),
-    current.closest("p"),
-    current.closest("div"),
-    current.parent(),
-  ];
+  let current = $(element as never);
+  let fallback = "";
 
-  for (const candidate of candidates) {
-    if (candidate.length === 0) {
-      continue;
+  for (let depth = 0; depth < MAX_ANCESTOR_DEPTH; depth += 1) {
+    if (current.length === 0) {
+      break;
     }
 
-    const text = normalizeWhitespace(candidate.first().text());
+    const text = normalizeWhitespace(current.first().text());
+
     if (
       text.length > 0 &&
       text.length <= MAX_CONTEXT_LENGTH
     ) {
-      return text;
+      fallback = text;
+
+      if (PERSON_HINT_REGEX.test(text)) {
+        return text;
+      }
     }
+
+    current = current.parent();
   }
 
-  return normalizeWhitespace(current.text()).slice(
-    0,
-    MAX_CONTEXT_LENGTH,
-  );
+  return fallback.slice(0, MAX_CONTEXT_LENGTH);
 };
 
 const addOccurrence = (
@@ -103,6 +103,8 @@ export const extractEmailOccurrences = (
 ): EmailOccurrence[] => {
   const $ = cheerio.load(html);
   const byKey = new Map<string, EmailOccurrence>();
+
+  $("script, style, noscript, template").remove();
 
   $('a[href^="mailto:" i]').each((_, element) => {
     const href = $(element).attr("href");
