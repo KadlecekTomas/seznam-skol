@@ -10,6 +10,7 @@ datasource db {
 enum SchoolType {
   PRIMARY
   SECONDARY
+  PRIMARY_AND_SECONDARY
   OTHER
 }
 
@@ -53,7 +54,7 @@ enum FetchMode {
 
 model School {
   id                    String        @id @default(uuid())
-  externalRegistryId    String?       @unique
+  externalRegistryId    String        @unique
   name                  String
   schoolType            SchoolType
   region                String
@@ -63,6 +64,10 @@ model School {
   addressFull           String
   ico                   String?
   redIzo                String?
+  registryEmails        String[]      @default([])
+  registryDirectorName  String?
+  registrySnapshotDate  DateTime?
+  registrySourceUrl     String?
   website               String?
   websiteStatus         WebsiteStatus @default(UNKNOWN)
   websiteSource         String?
