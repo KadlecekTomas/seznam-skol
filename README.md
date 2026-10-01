@@ -79,3 +79,7 @@ Teprve po ověření kvality se spustí celá Praha.
 ## Oprava pokrytí Chodovické
 
 Viz [zjištěná příčina, živé výsledky a omezení browser modulu](docs/CHODOVICKA_CORRECTION.md). Samotné nalezení kontaktů neznamená úplné pokrytí školy.
+
+## Plošný průchod Prahy
+
+[Výsledky, rozsah a spuštění z 1. 10. 2026](docs/PRAGUE_FULL_RUN.md). Celý rejstříkový rozsah byl zpracován; úplnost personálních kontaktů je evidována odděleně a není garantována.

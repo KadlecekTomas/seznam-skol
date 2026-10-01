@@ -14,3 +14,6 @@ data/
 exports/
 artifacts/
 .cache/
+
+# Worktrees may use an existing dependency directory via a symlink.
+node_modules

@@ -17,7 +17,12 @@
     "db:migrate": "prisma migrate dev --config prisma7.config.ts",
     "test:pilot": "node --test src/pilot/*.node-tests.mjs",
     "pilot:export": "node src/pilot/cli.mjs",
-    "profiles:script": "node src/pilot/browser-profiles.mjs"
+    "profiles:script": "node src/pilot/browser-profiles.mjs",
+    "batch:prepare": "node --import tsx src/batch/prepare.mjs",
+    "batch:scan": "node --import tsx src/batch/scan.mjs",
+    "batch:browser": "node --import tsx src/batch/browser.mjs",
+    "batch:export": "node --import tsx src/batch/export.mjs",
+    "test:batch": "node --import tsx --test src/batch/*.node-tests.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
