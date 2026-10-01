@@ -17,7 +17,10 @@
     "db:migrate": "prisma migrate dev --config prisma7.config.ts",
     "test:pilot": "node --test src/pilot/*.node-tests.mjs",
     "pilot:export": "node src/pilot/cli.mjs",
-    "profiles:script": "node src/pilot/browser-profiles.mjs"
+    "profiles:script": "node src/pilot/browser-profiles.mjs",
+    "test:batch": "node --import tsx --test src/batch/*.node-tests.mjs",
+    "batch:run": "node --import tsx src/batch/run.mjs",
+    "batch:assemble": "node --import tsx src/batch/assemble.mjs"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",

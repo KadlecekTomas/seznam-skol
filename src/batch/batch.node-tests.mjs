@@ -1,0 +1,36 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {safeUrl,publicIp,robotsPolicy} from './network.mjs';
+import {parseName,extractContacts,dedupeContacts} from './extract.mjs';
+import {candidates,identity,priority} from './run.mjs';
+const url='https://school.example.org/kontakty';
+for(const u of ['http://127.0.0.1','http://10.0.0.1','https://user:pass@school.cz','file:///etc/passwd','https://school.local','https://school.cz:3000'])test('unsafe URL '+u,()=>assert.equal(safeUrl(u),null));
+for(const ip of ['127.0.0.1','10.2.1.1','172.16.0.1','169.254.169.254','100.64.0.1','::1','::ffff:127.0.0.1','fc00::1','fe80::1'])test('non-public IP '+ip,()=>assert.equal(publicIp(ip),false));
+test('public address allowed',()=>assert.equal(publicIp('8.8.8.8'),true));
+test('keep query, www and http unchanged',()=>assert.equal(safeUrl('http://www.school.cz/index.php?id=12#contacts'),'http://www.school.cz/index.php?id=12'));
+test('robots unreachable fails closed',()=>assert.equal(robotsPolicy(503).kind,'UNAVAILABLE'));
+test('robots missing can crawl',()=>assert.equal(robotsPolicy(404).kind,'ABSENT'));
+test('ordinary name',()=>assert.equal(parseName('Mgr. Jana Nováková').lastName,'Nováková'));
+test('surname first',()=>assert.equal(parseName('PhDr. Slončíková Jana').firstName,'Jana'));
+test('multiple surname',()=>assert.equal(parseName('MgA. Libuše Moravcová Myřátská').lastName,'Moravcová Myřátská'));
+test('not a product',()=>assert.equal(parseName('Google Classroom'),null));
+test('not institution named after a person',()=>assert.equal(parseName('Gymnázium Jana Nerudy'),null));
+test('plain table row',()=>assert.equal(extractContacts('<table><tr><td>Mgr. Jana Nováková</td><td><a href="mailto:jana@example.org">E-mail</a></td></tr></table>',url).contacts[0]?.firstName,'Jana'));
+test('separate named cards do not cross pair',()=>{const r=extractContacts('<div><div><h3>Jan Novák</h3></div><div><h3>Petr Dvořák</h3>petr@example.org</div></div>',url);assert.equal(r.contacts[0].firstName,'Petr');});
+test('two people one mailbox quarantined',()=>assert.equal(extractContacts('<tr><td>Mgr. Jana Nováková</td><td>Mgr. Petr Dvořák</td><td>person@example.org</td></tr>',url).contacts.length,0));
+test('scripts are not visible evidence',()=>assert.equal(extractContacts('<script>"Jan Novák person@example.org"</script>',url).contacts.length,0));
+test('shared general mailbox not personal',()=>assert.equal(extractContacts('<p>Jan Novák<br>info@example.org</p>',url).contacts.length,0));
+test('email never derived',()=>assert.equal(extractContacts('<p>Jan Novák<br>formát prijmeni@domena</p>',url).contacts.length,0));
+test('profile controls counted',()=>assert.equal(extractContacts('<button><h3>Jan Novák</h3>Zobrazit profil</button>',url).profiles.length,1));
+test('freemail not a website',()=>assert.deepEqual(candidates({registryEmails:['skola@seznam.cz']}),[]));
+test('dedupe conflicting identity',()=>assert.equal(dedupeContacts([{email:'x@example.org',identity:'jan',evidenceText:'x'},{email:'x@example.org',identity:'petr',evidenceText:'x'}]).contacts.length,0));
+test('no identity from name only',()=>assert.equal(identity('<h1>Základní škola Testovací Praha</h1>',{name:'Základní škola Testovací Praha',ico:'12345678',redIzo:'600000000',registryEmails:[],addressStreet:'Jiná 1'}).verified,false));
+test('contact priority',()=>assert.ok(priority(url)>priority('https://school.example.org/aktuality')));
+
+test('explicit heading plus following email',()=>assert.equal(extractContacts('<main><h3>Mgr. David Havelka</h3><p>ředitel školy</p><p>reditel@example.org</p><hr><h3>Petr Dvořák</h3></main>',url).contacts[0]?.firstName,'David'));
+test('heading cannot cross next person',()=>assert.equal(extractContacts('<h3>Jan Novák</h3><p>Petr Dvořák</p><p>petr@example.org</p>',url).contacts.filter(c=>c.firstName==='Jan').length,0));
+
+import {exclusionReason} from './assemble.mjs';
+test('parent representative separated from staff',()=>assert.equal(exclusionReason({email:'parent@example.org',evidenceText:'Člen školské rady za rodiče'}),'PARENT_OR_STUDENT_REPRESENTATIVE'));
+test('technical support for parents remains a work contact',()=>assert.equal(exclusionReason({email:'support.person@example.org',evidenceText:'Technická podpora pro rodiče a žáky'}),null));
+test('placeholder not an actual person mailbox',()=>assert.equal(exclusionReason({email:'jmeno.prijmeni@example.org',evidenceText:''}),'INVALID_OR_PLACEHOLDER_EMAIL'));
